@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: attendance-server
+    restart: unless-stopped
+
+    env_file:
+      - ./server/.env
+
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGO_URI: mongodb://host.docker.internal:27017/attendance_system_v3
+      CLIENT_URL: http://localhost:5173
+
+    ports:
+      - "5000:5000"
+
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+    networks:
+      - attendance-network
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: attendance-client
+    restart: unless-stopped
+
+    ports:
+      - "5173:80"
+
+    depends_on:
+      - server
+
+    networks:
+      - attendance-network
+
+  mongo:
+    image: mongo:7
+    container_name: attendance-mongo
+    restart: unless-stopped
+
+    environment:
+      MONGO_INITDB_DATABASE: attendance-system
+
+    volumes:
+      - mongo-data:/data/db
+
+    ports:
+      - "27017:27017"
+
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+    networks:
+      - attendance-network
+
+volumes:
+  mongo-data:
+
+networks:
+  attendance-network:
+    driver: bridge
