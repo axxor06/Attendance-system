@@ -353,4 +353,4 @@ These boundaries are documented so a staging operator can complete them without 
 **Arjun Krishnan P. S.**  
 Developer of Attendance Register
 
-This README describes the v28.1 source release and its verified boundaries. It does not claim that a local test run alone certifies a production deployment.
+This README describes the v28.1 source release and its verified boundaries.
