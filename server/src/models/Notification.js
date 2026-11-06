@@ -1,0 +1,58 @@
+import mongoose from 'mongoose';
+import { NOTIFICATION_TYPE } from '../config/constants.js';
+
+const { Schema } = mongoose;
+
+const notificationSchema = new Schema(
+  {
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    type: {
+      type: String,
+      enum: Object.values(NOTIFICATION_TYPE),
+      default: NOTIFICATION_TYPE.GENERAL,
+    },
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    message: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    isRead: {
+      type: Boolean,
+      default: false,
+    },
+    // Optional idempotency key. A (user, dedupeKey) pair can exist only once, so
+    // retries and concurrent requests can never create duplicate notifications
+    // for the same event. Documents without a key are unaffected.
+    dedupeKey: {
+      type: String,
+      trim: true,
+      maxlength: 160,
+      default: undefined,
+    },
+    meta: {
+      // free-form extra data, e.g. { subjectId, percentage }
+      type: Schema.Types.Mixed,
+      default: {},
+    },
+  },
+  { timestamps: true }
+);
+
+notificationSchema.index({ user: 1, isRead: 1, createdAt: -1 });
+notificationSchema.index(
+  { user: 1, dedupeKey: 1 },
+  { unique: true, partialFilterExpression: { dedupeKey: { $type: 'string' } } },
+);
+
+const Notification = mongoose.model('Notification', notificationSchema);
+
+export default Notification;
