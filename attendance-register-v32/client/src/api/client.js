@@ -1,10 +1,10 @@
+
 import axios from 'axios';
 import { isSingleFlightRunning, runSingleFlight } from './singleFlight.js';
 import { getFriendlyError } from '../utils/errorMessages.js';
 import { getDeviceId } from '../utils/deviceId.js';
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-
+const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
 const api = axios.create({
   baseURL,
   withCredentials: true,
@@ -56,15 +56,26 @@ function notifyAuthFailure(error) {
 export function refreshAccessToken() {
   const refreshEpoch = authEpoch;
   return runSingleFlight(async () => {
-    const { data } = await axios.post(`${baseURL}/auth/refresh`, {}, { withCredentials: true, headers: { 'X-Device-Id': getDeviceId() } });
+    const { data } = await axios.post(
+      `${baseURL}/auth/refresh`,
+      {},
+      {
+        withCredentials: true,
+        headers: { 'X-Device-Id': getDeviceId() },
+      }
+    );
+
     if (refreshEpoch !== authEpoch) {
       throw new Error('Authentication session changed while refreshing.');
     }
+
     const session = data?.data;
     const newToken = session?.accessToken;
+
     if (!newToken) {
       throw new Error('Refresh response did not include an access token.');
     }
+
     setAccessToken(newToken);
     return session;
   });
@@ -76,19 +87,27 @@ export function hasRefreshInFlight() {
 
 api.interceptors.request.use((config) => {
   if (config._authEpoch === undefined) config._authEpoch = authEpoch;
+
   config.headers = config.headers || {};
   config.headers['X-Device-Id'] = getDeviceId();
+
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
+
   return config;
 });
 
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    error.friendlyMessage = getFriendlyError(error, 'The request could not be completed. Please try again.');
+    error.friendlyMessage = getFriendlyError(
+      error,
+      'The request could not be completed. Please try again.'
+    );
+
     const { config, response } = error;
+
     if (
       response?.status !== 401
       || !config
@@ -105,8 +124,10 @@ api.interceptors.response.use(
 
     try {
       const session = await refreshAccessToken();
+
       config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${session.accessToken}`;
+
       return api(config);
     } catch (refreshError) {
       invalidateAuthSession();

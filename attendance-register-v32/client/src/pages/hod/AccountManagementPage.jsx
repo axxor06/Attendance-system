@@ -367,34 +367,42 @@ export default function AccountManagementPage({ managedRole, tutorsOnly = false 
       {optionsError && <InlineNotice message={optionsError} onRetry={loadOptions} />}
 
       <section className="directory-toolbar" aria-label={`${copy.title} filters`}>
-        <div className="directory-search min-w-0 flex-1" aria-busy={isLoading}>
-          <Search size={17} className="directory-search-icon" aria-hidden="true" />
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={copy.searchPlaceholder} aria-label={copy.searchPlaceholder} className="field directory-search-input" />
+        <div className="directory-toolbar-main">
+          <div className="directory-search" aria-busy={isLoading}>
+            <Search size={17} className="directory-search-icon" aria-hidden="true" />
+            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={copy.searchPlaceholder} aria-label={copy.searchPlaceholder} className="field directory-search-input" />
+          </div>
+          <div className="directory-result-count">
+            {isLoading && <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo"><span className="h-2 w-2 animate-pulse rounded-full bg-indigo" />Searching</span>}
+            <span>{visibleRange}</span>
+          </div>
         </div>
-        {(managedRole === 'admin' || managedRole === 'user') && <div className="w-full min-w-[210px] sm:w-[240px]">
-          <Select label="Department" value={departmentFilter} onChange={(event) => setDepartmentFilter(event.target.value)}>
-            <option value="">All Departments</option>
-            {departments.map((department) => <option key={department._id} value={department._id}>{department.name}{department.code ? ` · ${department.code}` : ''}</option>)}
-          </Select>
-        </div>}
-        {managedRole === 'user' && <div className="w-full min-w-[180px] sm:w-[200px]">
-          <Select label="Semester" value={semesterFilter} onChange={(event) => setSemesterFilter(event.target.value)}>
-            <option value="">All semesters</option>
-            {semesters.map((semester) => <option key={semester._id} value={semester._id}>{semester.label || `Semester ${semester.number}`}</option>)}
-          </Select>
-        </div>}
-        <div className="w-full min-w-[170px] sm:w-[190px]">
-          <Select label="Sort by" value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
-            <option value="name">Name</option>
-            <option value="department">Department</option>
-            {managedRole === 'user' && <option value="semester">Semester</option>}
-            <option value="class">Class</option>
-          </Select>
+
+        <div className="directory-toolbar-filters">
+          {(managedRole === 'admin' || managedRole === 'user') && <div className="directory-filter-field">
+            <Select label="Department" value={departmentFilter} onChange={(event) => setDepartmentFilter(event.target.value)}>
+              <option value="">All Departments</option>
+              {departments.map((department) => <option key={department._id} value={department._id}>{department.name}{department.code ? ` · ${department.code}` : ''}</option>)}
+            </Select>
+          </div>}
+          {managedRole === 'user' && <div className="directory-filter-field">
+            <Select label="Semester" value={semesterFilter} onChange={(event) => setSemesterFilter(event.target.value)}>
+              <option value="">All semesters</option>
+              {semesters.map((semester) => <option key={semester._id} value={semester._id}>{semester.label || `Semester ${semester.number}`}</option>)}
+            </Select>
+          </div>}
+          <div className="directory-filter-field">
+            <Select label="Sort by" value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+              <option value="name">Name</option>
+              <option value="department">Department</option>
+              {managedRole === 'user' && <option value="semester">Semester</option>}
+              <option value="class">Class</option>
+            </Select>
+          </div>
+          <button type="button" className="directory-sort-toggle" onClick={() => setSortOrder((value) => value === 'asc' ? 'desc' : 'asc')} aria-label={`Sort ${sortOrder === 'asc' ? 'descending' : 'ascending'}`}>
+            {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+          </button>
         </div>
-        <button type="button" className="min-h-10 rounded-lg border border-line bg-surface px-3 text-xs font-bold text-ink transition hover:border-indigo/40 hover:bg-indigo-light focus:outline-none focus:ring-2 focus:ring-indigo/20" onClick={() => setSortOrder((value) => value === 'asc' ? 'desc' : 'asc')} aria-label={`Sort ${sortOrder === 'asc' ? 'descending' : 'ascending'}`}>
-          {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
-        </button>
-        <div className="flex shrink-0 items-center gap-2 text-sm text-slate">{isLoading && <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo"><span className="h-2 w-2 animate-pulse rounded-full bg-indigo" />Searching</span>}<span>{visibleRange}</span></div>
       </section>
 
       {isLoading ? <SkeletonTable cols={5} /> : loadError ? (

@@ -272,7 +272,14 @@ export default function QrAttendancePage() {
                       animate={{ opacity: 1, scale: 1 }}
                       className="rounded-2xl bg-white p-4 shadow-lg ring-1 ring-ink/8"
                     >
-                      <QRCodeSVG value={qrValue} size={196} level="M" />
+                      <QRCodeSVG
+                         value={qrValue}
+                         size={256}
+                         level="H"
+                         bgColor="#FFFFFF"
+                         fgColor="#000000"
+                         includeMargin={true}
+                       />
                     </motion.div>
                   )}
                 </AnimatePresence>

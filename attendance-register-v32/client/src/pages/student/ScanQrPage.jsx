@@ -95,21 +95,50 @@ export default function ScanQrPage() {
         if (!streamRef.current || busyRef.current) return;
         try {
           let raw = '';
+
+          // First try the browser's native QR detector.
           if (detector) {
-            const found = await detector.detect(video);
-            raw = found[0]?.rawValue || '';
-          } else if (video.videoWidth > 0 && canvasRef.current) {
+            try {
+              const found = await detector.detect(video);
+              raw = found[0]?.rawValue || '';
+            } catch {
+              raw = '';
+            }
+          }
+
+          // Validate the native result before accepting it.
+          let normalized = raw ? extractCodeFromScan(raw) : '';
+
+          // Try jsQR if native detection fails or returns an invalid code.
+          if (normalized.length !== 8 && video.videoWidth > 0 && canvasRef.current) {
             const canvas = canvasRef.current;
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             const context = canvas.getContext('2d', { willReadFrequently: true });
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             const image = context.getImageData(0, 0, canvas.width, canvas.height);
-            raw = jsQR(image.data, image.width, image.height, { inversionAttempts: 'attemptBoth' })?.data || '';
+            const result = jsQR(
+              image.data,
+              image.width,
+              image.height,
+              { inversionAttempts: 'attemptBoth' }
+            );
+
+            if (result?.data) {
+              raw = result.data;
+              normalized = extractCodeFromScan(raw);
+            }
           }
-          if (raw && extractCodeFromScan(raw).length === 8) { await submitCode(raw); return; }
+
+          if (normalized.length === 8) {
+            await submitCode(normalized);
+            return;
+          }
         } catch { /* a frame can fail while the camera refocuses; try the next one */ }
-        frameRef.current = requestAnimationFrame(tick);
+
+        if (streamRef.current && !busyRef.current) {
+          frameRef.current = requestAnimationFrame(tick);
+        }
       };
       frameRef.current = requestAnimationFrame(tick);
     } catch (error) {
